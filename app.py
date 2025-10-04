@@ -26,10 +26,11 @@ ADMINS = {
 }
 
 # ------------------------------
-# Routes
+# Routes for Pages
 # ------------------------------
 @app.route("/")
 def home():
+    # Pass ADMINS to template so login.js can use it
     return render_template("index.html", ADMINS=ADMINS)
 
 @app.route("/player")
@@ -38,10 +39,10 @@ def player_dashboard():
 
 @app.route("/admin")
 def admin_dashboard():
-    return render_template("admin_dashboard.html")
+    return render_template("admin_dashboard.html", ADMINS=ADMINS)
 
 # ------------------------------
-# Player Register/Login
+# API Endpoints - Player Register/Login
 # ------------------------------
 @app.route("/api/register", methods=["POST"])
 def register():
@@ -52,10 +53,10 @@ def register():
     if not username or not team:
         return jsonify(ok=False, error="Username and ambassador selection required"), 400
 
-    # Avoid duplicates
     existing = next((p for p in players if p["username"] == username), None)
     if existing:
-        return jsonify(ok=True, msg="Logged in existing player", username=username, team=team)
+        # allow re-login
+        return jsonify(ok=True, msg="Welcome back", username=existing["username"], team=existing["team"])
 
     if team not in ADMINS:
         return jsonify(ok=False, error="Invalid team"), 400
@@ -73,14 +74,33 @@ def register():
     return jsonify(ok=True, msg=f"{username} registered in Team {team}", username=username, team=team)
 
 # ------------------------------
-# Admin Login
+# API Endpoints - Player Data
+# ------------------------------
+@app.route("/api/players")
+def get_players():
+    return jsonify({"players": players})
+
+@app.route("/api/player/score", methods=["POST"])
+def update_score():
+    """Increase player's score when clicking a link"""
+    data = request.json
+    username = data.get("username")
+    points = int(data.get("points", 0))
+
+    for p in players:
+        if p["username"] == username:
+            p["score"] += points
+            return jsonify(ok=True, msg=f"{username} gained {points} points!", score=p["score"])
+
+    return jsonify(ok=False, error="Player not found"), 404
+
+# ------------------------------
+# API Endpoints - Admin Login
 # ------------------------------
 @app.route("/api/admin/login", methods=["POST"])
 def admin_login():
     data = request.json
-    name = data.get("name")
-    team = str(data.get("team"))
-    password = data.get("password")
+    name, team, password = data.get("name"), str(data.get("team")), data.get("password")
 
     if team not in ADMINS:
         return jsonify(ok=False, error="Invalid team"), 400
@@ -92,64 +112,34 @@ def admin_login():
     return jsonify(ok=True, msg=f"Welcome {name}", team=team)
 
 # ------------------------------
-# Player Actions
-# ------------------------------
-@app.route("/api/scan", methods=["POST"])
-def scan():
-    data = request.json
-    username = data.get("username")
-    player = next((p for p in players if p["username"] == username), None)
-    if not player:
-        return jsonify(ok=False, error="Player not found"), 404
-
-    # Return dummy links
-    dummy_links = [{"url": f"https://example.com/link{i}", "points":5} for i in range(1,16)]
-    return jsonify(ok=True, links=dummy_links, score=player["score"])
-
-@app.route("/api/scan/click", methods=["POST"])
-def click_link():
-    data = request.json
-    username = data.get("username")
-    points = int(data.get("points", 5))
-    player = next((p for p in players if p["username"] == username), None)
-    if not player:
-        return jsonify(ok=False, error="Player not found"), 404
-
-    player["score"] += points
-    return jsonify(ok=True, score=player["score"])
-
-@app.route("/api/leaderboard")
-def leaderboard():
-    sorted_players = sorted(players, key=lambda x: x["score"], reverse=True)
-    return jsonify(sorted_players)
-
-# ------------------------------
-# Admin Actions
+# API Endpoints - Admin Actions
 # ------------------------------
 @app.route("/api/admin/set_imposter", methods=["POST"])
 def set_imposter():
     data = request.json
     username = data.get("username")
-    player = next((p for p in players if p["username"] == username), None)
-    if not player:
-        return jsonify(ok=False, error="Player not found"), 404
-    player["imposter"] = True
-    return jsonify(ok=True, msg=f"{username} set as Imposter")
+    if not username:
+        return jsonify(ok=False, error="Username required"), 400
+    for p in players:
+        if p["username"] == username:
+            p["imposter"] = True
+            return jsonify(ok=True, msg=f"{username} set as Imposter")
+    return jsonify(ok=False, error="Player not found"), 404
 
 @app.route("/api/admin/announce", methods=["POST"])
 def announce_results():
     data = request.json
     username = data.get("username")
     role = data.get("role")  # winner / runner
-    player = next((p for p in players if p["username"] == username), None)
-    if not player:
-        return jsonify(ok=False, error="Player not found"), 404
-    player["role"] = role
-    if role=="winner":
-        player["score"] += 50
-    elif role=="runner":
-        player["score"] += 30
-    return jsonify(ok=True, msg=f"{username} set as {role}")
+    for p in players:
+        if p["username"] == username:
+            p["role"] = role
+            if role == "winner":
+                p["score"] += 50
+            elif role == "runner":
+                p["score"] += 30
+            return jsonify(ok=True, msg=f"{username} set as {role}")
+    return jsonify(ok=False, error="Player not found"), 404
 
 @app.route("/api/teams")
 def get_teams():
@@ -161,6 +151,20 @@ def reset_game():
     players = []
     teams = [[] for _ in range(12)]
     return jsonify(ok=True, msg="Game reset successful!")
+
+# ------------------------------
+# Dummy Links for Players
+# ------------------------------
+@app.route("/api/links")
+def get_links():
+    """Return dummy links (replace later with real links)"""
+    return jsonify({
+        "links": [
+            {"title": "Resource 1", "url": "#", "points": 5},
+            {"title": "Resource 2", "url": "#", "points": 5},
+            {"title": "Resource 3", "url": "#", "points": 5}
+        ]
+    })
 
 # ------------------------------
 # Run App
