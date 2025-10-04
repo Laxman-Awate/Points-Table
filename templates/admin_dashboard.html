@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Admin Dashboard</title>
+  <link href="{{ url_for('static', filename='dist/output.css') }}" rel="stylesheet">
+</head>
+<body class="bg-gradient-to-br from-yellow-200 via-red-200 to-pink-300 min-h-screen p-6">
+  <h1 class="text-3xl font-bold mb-6">🛠️ Admin Dashboard</h1>
+
+  <!-- Imposter -->
+  <section class="bg-white p-6 rounded-xl shadow-md mb-6">
+    <h3 class="font-semibold text-lg mb-3">🕵️ Assign Imposter</h3>
+    <div class="flex gap-3">
+      <select id="player-select" class="border p-3 rounded-lg flex-1"></select>
+      <button id="btn-set-imposter" class="px-6 py-3 bg-yellow-600 text-white rounded-lg">Set</button>
+    </div>
+  </section>
+
+  <!-- Results -->
+  <section class="bg-white p-6 rounded-xl shadow-md mb-6">
+    <h3 class="font-semibold text-lg mb-3">🏆 Announce Results</h3>
+    <div class="flex gap-3">
+      <select id="result-player-select" class="border p-3 rounded-lg flex-1"></select>
+      <button id="btn-winner" class="px-6 py-3 bg-indigo-600 text-white rounded-lg">Winner</button>
+      <button id="btn-run" class="px-6 py-3 bg-gray-600 text-white rounded-lg">Runner-up</button>
+    </div>
+  </section>
+
+  <!-- Reset Game -->
+  <section class="bg-white p-6 rounded-xl shadow-md mb-6">
+    <h3 class="font-semibold text-lg mb-3">♻️ Reset Game</h3>
+    <button id="btn-reset" class="px-6 py-3 bg-red-600 text-white rounded-lg">Reset</button>
+  </section>
+
+  <!-- Teams -->
+  <section class="bg-white p-6 rounded-xl shadow-md">
+    <h3 class="font-semibold text-lg mb-3">📋 Teams</h3>
+    <div id="teams-container" class="grid md:grid-cols-2 gap-6"></div>
+  </section>
+
+  <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+</body>
+</html>

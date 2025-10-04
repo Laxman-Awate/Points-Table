@@ -1,0 +1,119 @@
+{
+  "players": {
+    "sampleUser": {
+      "points": 0,
+      "scans": 0,
+      "found_imposter": 0,
+      "wins": 0,
+      "runnerups": 0
+    },
+    "Laxman": {
+      "points": 532,
+      "scans": 2,
+      "found_imposter": 4,
+      "wins": 30,
+      "runnerups": 0
+    },
+    "Girish": {
+      "points": 10,
+      "scans": 2,
+      "found_imposter": 0,
+      "wins": 0,
+      "runnerups": 0
+    },
+    "Mahesh": {
+      "points": 5,
+      "scans": 1,
+      "found_imposter": 0,
+      "wins": 0,
+      "runnerups": 0
+    },
+    "Aniket": {
+      "points": 5,
+      "scans": 1,
+      "found_imposter": 0,
+      "wins": 0,
+      "runnerups": 0
+    },
+    "nayeem": {
+      "points": 0,
+      "scans": 0,
+      "found_imposter": 0,
+      "wins": 0,
+      "runnerups": 0,
+      "is_imposter": false
+    },
+    "naveen": {
+      "username": "naveen",
+      "team": null,
+      "points": 0,
+      "scans": 0,
+      "wins": 0,
+      "found_imposter": 0
+    },
+    "Shubham": {
+      "username": "Shubham",
+      "team": null,
+      "points": 0,
+      "scans": 0,
+      "wins": 0,
+      "found_imposter": 0
+    },
+    "Kiran": {
+      "username": "Kiran",
+      "team": null,
+      "points": 15,
+      "scans": 0,
+      "wins": 1,
+      "found_imposter": 0
+    },
+    "Rahul": {
+      "username": "Rahul",
+      "team": 4,
+      "points": 30,
+      "scans": 0,
+      "wins": 0,
+      "found_imposter": 3
+    },
+    "pradeep": {
+      "username": "pradeep",
+      "team": 1,
+      "points": 0,
+      "scans": 0,
+      "wins": 0,
+      "found_imposter": 0
+    },
+    "Kumar": {
+      "username": "Kumar",
+      "team": 1,
+      "points": 0,
+      "scans": 0,
+      "wins": 0,
+      "found_imposter": 0
+    },
+    "Manjunath": {
+      "username": "Manjunath",
+      "team": 2,
+      "points": 0,
+      "scans": 0,
+      "wins": 0,
+      "found_imposter": 0
+    },
+    "Suhas": {
+      "username": "Suhas",
+      "team": 2,
+      "points": 0,
+      "scans": 0,
+      "wins": 0,
+      "found_imposter": 0
+    }
+  },
+  "games": {},
+  "config": {
+    "scan_points": 5,
+    "imposter_points": 10,
+    "winner_points": 15,
+    "runnerup_points": 8,
+    "target_points": 100
+  }
+}
