@@ -5,31 +5,93 @@
   <title>Player Dashboard</title>
   <link href="{{ url_for('static', filename='dist/output.css') }}" rel="stylesheet">
 </head>
-<body class="bg-gradient-to-br from-blue-200 via-purple-200 to-pink-300 min-h-screen p-6">
+<body class="bg-gradient-to-br from-green-200 via-blue-200 to-purple-300 min-h-screen p-6">
+
   <h1 class="text-3xl font-bold mb-6">🎮 Player Dashboard</h1>
 
   <!-- Player Info -->
   <section class="bg-white p-6 rounded-xl shadow-md mb-6">
-    <h2 class="text-xl font-semibold mb-2">👤 Player Info</h2>
-    <p><strong>Name:</strong> <span id="player-name"></span></p>
-    <p><strong>Team:</strong> <span id="player-team"></span></p>
-    <p><strong>Score:</strong> <span id="player-score">0</span></p>
-    <p id="winner-runner-msg" class="font-bold text-green-600 mt-2"></p>
+    <h3 class="font-semibold text-lg mb-3">👤 Your Info</h3>
+    <p id="player-name"></p>
+    <p id="player-team"></p>
+    <p>Score: <span id="player-score">0</span></p>
   </section>
 
   <!-- Start Scan -->
   <section class="bg-white p-6 rounded-xl shadow-md mb-6">
-    <h2 class="text-xl font-semibold mb-2">🔍 Scan</h2>
-    <button id="btn-scan" class="px-6 py-3 bg-blue-600 text-white rounded-lg">Start Scan</button>
-    <div id="links-container" class="mt-4 grid grid-cols-2 md:grid-cols-3 gap-3 hidden"></div>
+    <button id="btn-scan" class="px-6 py-3 bg-indigo-600 text-white rounded-lg">Start Scan</button>
+    <ul id="links-container" class="mt-4 space-y-2 hidden list-disc pl-6"></ul>
   </section>
 
   <!-- Leaderboard -->
   <section class="bg-white p-6 rounded-xl shadow-md">
-    <h2 class="text-xl font-semibold mb-2">🏆 Leaderboard</h2>
-    <ul id="leaderboard"></ul>
+    <h3 class="font-semibold text-lg mb-3">🏆 Leaderboard</h3>
+    <ul id="leaderboard" class="list-disc pl-6"></ul>
   </section>
 
-  <script src="{{ url_for('static', filename='js/player.js') }}"></script>
+  <script>
+    const username = localStorage.getItem("username");
+    const team = localStorage.getItem("team");
+    const scoreEl = document.getElementById("player-score");
+    const linksContainer = document.getElementById("links-container");
+
+    document.getElementById("player-name").textContent = "Name: " + username;
+    document.getElementById("player-team").textContent = "Team: " + team;
+
+    // Dummy Links (replace later with your own)
+    const dummyLinks = [
+      "https://www.google.com",
+      "https://www.youtube.com",
+      "https://www.wikipedia.org",
+      "https://www.openai.com",
+      "https://www.github.com"
+    ];
+
+    // Fetch leaderboard
+    async function loadLeaderboard(){
+      const res = await fetch("/api/players");
+      const data = await res.json();
+      const lb = document.getElementById("leaderboard");
+      lb.innerHTML = "";
+      data.players
+        .sort((a,b)=>b.score - a.score)
+        .forEach(p=>{
+          const li = document.createElement("li");
+          li.textContent = `${p.username} (Team ${p.team}) - ${p.score} pts ${p.role ? "🏅 " + p.role : ""}`;
+          lb.appendChild(li);
+          if(p.username === username){
+            scoreEl.textContent = p.score;
+          }
+        });
+    }
+
+    // Show dummy links as bullets after clicking Start Scan
+    document.getElementById("btn-scan").addEventListener("click", async ()=>{
+      linksContainer.innerHTML = "";
+      dummyLinks.forEach(link=>{
+        const li = document.createElement("li");
+        const a = document.createElement("a");
+        a.href = link;
+        a.textContent = link; // direct link
+        a.target = "_blank";
+        a.className = "text-blue-600 underline hover:text-blue-800";
+        a.addEventListener("click", async ()=>{
+          await fetch("/api/player/score", {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body: JSON.stringify({username, points: 5})
+          });
+          loadLeaderboard();
+        });
+        li.appendChild(a);
+        linksContainer.appendChild(li);
+      });
+      linksContainer.classList.remove("hidden");
+    });
+
+    // Auto refresh leaderboard
+    setInterval(loadLeaderboard, 5000);
+    loadLeaderboard();
+  </script>
 </body>
 </html>
