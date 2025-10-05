@@ -7,26 +7,43 @@
 </head>
 <body class="bg-gradient-to-br from-green-200 via-blue-200 to-purple-300 min-h-screen p-6">
 
-  <h1 class="text-3xl font-bold mb-6">🎮 Player Dashboard</h1>
+  <h1 class="text-3xl font-bold mb-6 text-center">🎮 Player Dashboard</h1>
 
   <!-- Player Info -->
   <section class="bg-white p-6 rounded-xl shadow-md mb-6">
     <h3 class="font-semibold text-lg mb-3">👤 Your Info</h3>
-    <p id="player-name"></p>
-    <p id="player-team"></p>
-    <p>Score: <span id="player-score">0</span></p>
+    <p id="player-name" class="text-lg font-medium"></p>
+    <p id="player-team" class="text-lg font-medium"></p>
+    <p>Score: <span id="player-score" class="font-bold">0</span></p>
   </section>
 
   <!-- Start Scan -->
   <section class="bg-white p-6 rounded-xl shadow-md mb-6">
-    <button id="btn-scan" class="px-6 py-3 bg-indigo-600 text-white rounded-lg">Start Scan</button>
+    <button id="btn-scan" class="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">Start Scan</button>
     <ul id="links-container" class="mt-4 space-y-2 hidden list-disc pl-6"></ul>
   </section>
 
   <!-- Leaderboard -->
   <section class="bg-white p-6 rounded-xl shadow-md">
-    <h3 class="font-semibold text-lg mb-3">🏆 Leaderboard</h3>
-    <ul id="leaderboard" class="list-disc pl-6"></ul>
+    <h3 class="font-semibold text-lg mb-3">🏆 Leaderboard by Team</h3>
+    <div class="overflow-x-auto">
+      <table class="min-w-full border border-gray-300 bg-white rounded-lg text-sm">
+        <thead class="bg-gray-200 sticky top-0">
+          <tr>
+            <th class="border p-3 text-center">Rank</th>
+            <th class="border p-3 text-center">Team</th>
+            <th class="border p-3 text-center">Player</th>
+            <th class="border p-3 text-center">QR</th>
+            <th class="border p-3 text-center">Treasure</th>
+            <th class="border p-3 text-center">Game 1</th>
+            <th class="border p-3 text-center">Game 2</th>
+            <th class="border p-3 text-center">Reel</th>
+            <th class="border p-3 text-center">Total</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboard-body"></tbody>
+      </table>
+    </div>
   </section>
 
   <script>
@@ -35,10 +52,14 @@
     const scoreEl = document.getElementById("player-score");
     const linksContainer = document.getElementById("links-container");
 
+    if(!username || !team){
+      alert("Please login again!");
+      window.location.href = "/";
+    }
+
     document.getElementById("player-name").textContent = "Name: " + username;
     document.getElementById("player-team").textContent = "Team: " + team;
 
-    // Dummy Links (replace later with your own)
     const dummyLinks = [
       "https://www.google.com",
       "https://www.youtube.com",
@@ -47,51 +68,120 @@
       "https://www.github.com"
     ];
 
-    // Fetch leaderboard
-    async function loadLeaderboard(){
-      const res = await fetch("/api/players");
-      const data = await res.json();
-      const lb = document.getElementById("leaderboard");
-      lb.innerHTML = "";
-      data.players
-        .sort((a,b)=>b.score - a.score)
-        .forEach(p=>{
-          const li = document.createElement("li");
-          li.textContent = `${p.username} (Team ${p.team}) - ${p.score} pts ${p.role ? "🏅 " + p.role : ""}`;
-          lb.appendChild(li);
-          if(p.username === username){
-            scoreEl.textContent = p.score;
-          }
+    async function loadLeaderboard() {
+      try {
+        const res = await fetch("/api/players");
+        const data = await res.json();
+        const tbody = document.getElementById("leaderboard-body");
+        tbody.innerHTML = "";
+
+        // Ensure current player is present
+        let playerExists = data.players.some(p => p.username === username);
+        if (!playerExists) {
+          data.players.push({
+            username,
+            team,
+            qr_points: 0,
+            treasure_points: 0,
+            game1_points: 0,
+            game2_points: 0,
+            reel_points: 0,
+            score: 0
+          });
+        }
+
+        // Group players by team
+        const teams = {};
+        data.players.forEach(p => {
+          if(!teams[p.team]) teams[p.team] = [];
+          teams[p.team].push(p);
         });
+
+        // Calculate team totals
+        const teamTotals = Object.keys(teams).map(teamId => {
+          const total = teams[teamId].reduce((sum, p) => sum + (p.score || 0), 0);
+          return { teamId, total, players: teams[teamId] };
+        });
+
+        // Sort teams by total descending
+        teamTotals.sort((a,b) => b.total - a.total);
+
+        let rank = 1;
+        teamTotals.forEach(teamData => {
+          // Team header row
+          const teamRow = document.createElement("tr");
+          teamRow.classList.add("bg-gray-200", "font-semibold");
+          teamRow.innerHTML = `
+            <td class="border p-2 text-center">${rank}</td>
+            <td class="border p-2 text-center">${teamData.teamId} (Total)</td>
+            <td class="border p-2 text-center" colspan="6"></td>
+            <td class="border p-2 text-center">${teamData.total}</td>
+          `;
+          tbody.appendChild(teamRow);
+
+          // Sort players by score
+          teamData.players.sort((a,b) => b.score - a.score);
+          teamData.players.forEach((p, idx) => {
+            const row = document.createElement("tr");
+            if(p.username === username){
+              row.classList.add("bg-yellow-100","font-semibold");
+              scoreEl.textContent = p.score;
+            } else {
+              row.classList.add(idx % 2 === 0 ? "bg-white" : "bg-gray-50");
+            }
+            row.classList.add("hover:bg-gray-100");
+
+            row.innerHTML = `
+              <td class="border p-2 text-center"></td>
+              <td class="border p-2 text-center"></td>
+              <td class="border p-2 text-center">${p.username}</td>
+              <td class="border p-2 text-center">${p.qr_points || 0}</td>
+              <td class="border p-2 text-center">${p.treasure_points || 0}</td>
+              <td class="border p-2 text-center">${p.game1_points || 0}</td>
+              <td class="border p-2 text-center">${p.game2_points || 0}</td>
+              <td class="border p-2 text-center">${p.reel_points || 0}</td>
+              <td class="border p-2 text-center">${p.score}</td>
+            `;
+            tbody.appendChild(row);
+          });
+
+          rank++;
+        });
+
+      } catch(err){
+        console.error("Failed to load leaderboard:", err);
+      }
     }
 
-    // Show dummy links as bullets after clicking Start Scan
-    document.getElementById("btn-scan").addEventListener("click", async ()=>{
+    // QR Scan links
+    document.getElementById("btn-scan").addEventListener("click", () => {
       linksContainer.innerHTML = "";
-      dummyLinks.forEach(link=>{
+      dummyLinks.forEach(link => {
         const li = document.createElement("li");
         const a = document.createElement("a");
         a.href = link;
-        a.textContent = link; // direct link
+        a.textContent = link;
         a.target = "_blank";
         a.className = "text-blue-600 underline hover:text-blue-800";
-        a.addEventListener("click", async ()=>{
+
+        a.addEventListener("click", async () => {
           await fetch("/api/player/score", {
-            method:"POST",
-            headers:{"Content-Type":"application/json"},
-            body: JSON.stringify({username, points: 5})
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, points: 1, category: "qr_points" })
           });
-          loadLeaderboard();
+          await loadLeaderboard();
         });
+
         li.appendChild(a);
         linksContainer.appendChild(li);
       });
       linksContainer.classList.remove("hidden");
     });
 
-    // Auto refresh leaderboard
-    setInterval(loadLeaderboard, 5000);
+    // Initial load and auto refresh
     loadLeaderboard();
+    setInterval(loadLeaderboard, 5000);
   </script>
 </body>
 </html>

@@ -4,9 +4,11 @@
   <meta charset="utf-8">
   <title>Admin Dashboard</title>
   <link href="{{ url_for('static', filename='dist/output.css') }}" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gradient-to-br from-yellow-200 via-red-200 to-pink-300 min-h-screen p-6">
-  <h1 class="text-3xl font-bold mb-6">🛠️ Admin Dashboard</h1>
+
+  <h1 class="text-3xl font-bold mb-6 text-center">🛠️ Admin Dashboard</h1>
 
   <!-- Imposter -->
   <section class="bg-white p-6 rounded-xl shadow-md mb-6">
@@ -33,12 +35,123 @@
     <button id="btn-reset" class="px-6 py-3 bg-red-600 text-white rounded-lg">Reset</button>
   </section>
 
+  <!-- Points Update Section -->
+  <section class="bg-white p-6 rounded-xl shadow-md mb-6">
+    <h3 class="font-semibold text-lg mb-3">🎯 Update Team Points</h3>
+    <div class="admin-controls flex flex-wrap gap-4">
+      <button data-category="treasure_points" class="update-btn px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700">Update Treasure Hunt Points</button>
+      <button data-category="game1_points" class="update-btn px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Update Game 1 Points</button>
+      <button data-category="game2_points" class="update-btn px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700">Update Game 2 Points</button>
+      <button data-category="reel_points" class="update-btn px-6 py-3 bg-pink-600 text-white rounded-lg hover:bg-pink-700">Update Reel Points</button>
+    </div>
+  </section>
+
   <!-- Teams -->
   <section class="bg-white p-6 rounded-xl shadow-md">
-    <h3 class="font-semibold text-lg mb-3">📋 Teams</h3>
+    <h3 class="font-semibold text-lg mb-3">📋 Teams & Players</h3>
     <div id="teams-container" class="grid md:grid-cols-2 gap-6"></div>
   </section>
 
-  <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
+  <script>
+    const teamsContainer = document.getElementById("teams-container");
+    const playerSelect = document.getElementById("player-select");
+    const resultSelect = document.getElementById("result-player-select");
+
+    // Load teams & players
+    async function loadPlayers() {
+      const res = await fetch("/api/players");
+      const data = await res.json();
+      const players = data.players;
+
+      // Clear previous
+      teamsContainer.innerHTML = "";
+      playerSelect.innerHTML = "";
+      resultSelect.innerHTML = "";
+
+      // Group players by team
+      const teams = {};
+      players.forEach(p => {
+        if(!teams[p.team]) teams[p.team] = [];
+        teams[p.team].push(p);
+      });
+
+      for(const team in teams) {
+        const div = document.createElement("div");
+        div.className = "bg-gray-50 p-4 rounded-lg shadow";
+
+        const teamName = document.createElement("h4");
+        teamName.textContent = `Team ${team}`;
+        teamName.className = "font-semibold mb-2";
+        div.appendChild(teamName);
+
+        teams[team].forEach(p => {
+          const pEl = document.createElement("p");
+          pEl.textContent = `${p.username} - Total: ${p.score} pts`;
+          div.appendChild(pEl);
+
+          // Populate selects
+          const option1 = document.createElement("option");
+          option1.value = p.username;
+          option1.textContent = `${p.username} (Team ${p.team})`;
+          playerSelect.appendChild(option1);
+
+          const option2 = document.createElement("option");
+          option2.value = p.username;
+          option2.textContent = `${p.username} (Team ${p.team})`;
+          resultSelect.appendChild(option2);
+        });
+
+        teamsContainer.appendChild(div);
+      }
+    }
+
+    // Update team points
+    document.querySelectorAll(".update-btn").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const category = btn.dataset.category;
+        const team = prompt("Enter Team to update points:");
+        const points = parseInt(prompt("Enter points to add:"), 10);
+        if(!team || isNaN(points)) return;
+
+        await fetch("/api/team/update", {
+          method: "POST",
+          headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({team, category, points})
+        });
+        loadPlayers();
+      });
+    });
+
+    // Reset game
+    document.getElementById("btn-reset").addEventListener("click", async () => {
+      if(confirm("Are you sure you want to reset all points?")){
+        await fetch("/api/reset", {method: "POST"});
+        loadPlayers();
+      }
+    });
+
+    // Set Imposter
+    document.getElementById("btn-set-imposter").addEventListener("click", () => {
+      const player = playerSelect.value;
+      if(!player) return alert("Select a player to assign as Imposter");
+      alert(`${player} is set as the Imposter!`);
+    });
+
+    // Winner / Runner-up
+    document.getElementById("btn-winner").addEventListener("click", () => {
+      const player = resultSelect.value;
+      if(!player) return alert("Select a player to set as Winner");
+      alert(`${player} is declared the Winner!`);
+    });
+    document.getElementById("btn-run").addEventListener("click", () => {
+      const player = resultSelect.value;
+      if(!player) return alert("Select a player to set as Runner-up");
+      alert(`${player} is declared the Runner-up!`);
+    });
+
+    // Initial load
+    loadPlayers();
+    setInterval(loadPlayers, 5000); // refresh leaderboard every 5s
+  </script>
 </body>
 </html>

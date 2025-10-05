@@ -1,107 +1,63 @@
-document.addEventListener("DOMContentLoaded", () => {
-  const username = localStorage.getItem("username");
-  const team = localStorage.getItem("team");
+// static/js/Player.js
 
-  const nameSpan = document.getElementById("player-name");
-  const teamSpan = document.getElementById("player-team");
-  const scoreSpan = document.getElementById("player-score");
-  const winnerRunnerMsg = document.getElementById("winner-runner-msg");
+let username = localStorage.getItem("username");
+let teamId = localStorage.getItem("team");
 
-  const btnScan = document.getElementById("btn-scan");
-  const linksContainer = document.getElementById("links-container");
-  const leaderboard = document.getElementById("leaderboard");
+if (!username || !teamId) {
+    alert("Please register again!");
+    window.location.href = "/";
+}
 
-  // Dummy links (replace later with your actual links)
-  const dummyLinks = Array.from({ length: 15 }, (_, i) => `https://example.com/link${i+1}`);
+document.getElementById("player-name").innerText = username;
+document.getElementById("team-id").innerText = "Team " + teamId;
 
-  // ------------------------------
-  // Load Player Info
-  // ------------------------------
-  async function loadPlayer() {
-    if (!username || !team) {
-      alert("You are not logged in!");
-      window.location.href = "/";
-      return;
+// Function to load team and player data
+async function loadPlayerData() {
+    try {
+        const res = await fetch("/api/leaderboard");
+        const data = await res.json();
+        if (!data.ok) return;
+
+        const team = data.leaderboard.find(t => t.team === teamId);
+        if (team) {
+            document.getElementById("qr-points").innerText = team.qr;
+            document.getElementById("treasure-points").innerText = team.treasure;
+            document.getElementById("game1-points").innerText = team.game1;
+            document.getElementById("game2-points").innerText = team.game2;
+            document.getElementById("reel-points").innerText = team.reel;
+            document.getElementById("total-points").innerText = team.total;
+
+            // Player personal points
+            const player = team.players.find(p => p.username === username);
+            document.getElementById("personal-points").innerText = player ? player.score : 0;
+        }
+    } catch (err) {
+        console.error(err);
     }
+}
 
-    nameSpan.textContent = username;
-    teamSpan.textContent = team;
-
-    const res = await fetch("/api/players");
-    const data = await res.json();
-    const player = data.players.find(p => p.username === username);
-
-    if (player) {
-      scoreSpan.textContent = player.score;
-      if (player.role === "winner") {
-        winnerRunnerMsg.textContent = "🎉 You are the WINNER!";
-      } else if (player.role === "runner") {
-        winnerRunnerMsg.textContent = "🥈 You are the RUNNER-UP!";
-      } else {
-        winnerRunnerMsg.textContent = "";
-      }
-    }
-  }
-
-  // ------------------------------
-  // Load Leaderboard
-  // ------------------------------
-  async function loadLeaderboard() {
-    const res = await fetch("/api/players");
-    const data = await res.json();
-
-    leaderboard.innerHTML = "";
-    data.players
-      .sort((a, b) => b.score - a.score)
-      .forEach((p, idx) => {
-        const li = document.createElement("li");
-        li.textContent = `${idx + 1}. ${p.username} (Team ${p.team}) - ${p.score}`;
-        if (p.role === "winner") li.textContent += " 🏆";
-        if (p.role === "runner") li.textContent += " 🥈";
-        leaderboard.appendChild(li);
-      });
-  }
-
-  // ------------------------------
-  // Scan Button → Show Links
-  // ------------------------------
-  if (btnScan) {
-    btnScan.addEventListener("click", () => {
-      linksContainer.innerHTML = "";
-      dummyLinks.forEach((link, idx) => {
-        const btn = document.createElement("button");
-        btn.textContent = `Link ${idx + 1}`;
-        btn.classList.add("px-3", "py-2", "bg-green-500", "text-white", "rounded-lg", "hover:bg-green-700");
-        btn.addEventListener("click", async () => {
-          const res = await fetch("/api/player/score", {
+// QR scan function
+async function scanQR() {
+    try {
+        const res = await fetch("/api/player/scan", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username, points: 5 })
-          });
-          const r = await res.json();
-          if (r.ok) {
-            await loadPlayer();
-            await loadLeaderboard();
-            btn.disabled = true;
-            btn.classList.add("opacity-50");
-          } else {
-            alert(r.error);
-          }
+            body: JSON.stringify({ username }),
         });
-        linksContainer.appendChild(btn);
-      });
-      linksContainer.classList.remove("hidden"); // <-- show links
-    });
-  }
 
-  // ------------------------------
-  // Auto refresh every 5 seconds
-  // ------------------------------
-  setInterval(() => {
-    loadPlayer();
-    loadLeaderboard();
-  }, 5000);
+        const data = await res.json();
+        if (data.ok) {
+            alert(data.reward);
+            loadPlayerData();
+        } else {
+            alert("Scan failed: " + data.error);
+        }
+    } catch (err) {
+        console.error(err);
+    }
+}
 
-  loadPlayer();
-  loadLeaderboard();
-});
+// Load data when page opens
+loadPlayerData();
+
+document.getElementById("scan-btn").addEventListener("click", scanQR);

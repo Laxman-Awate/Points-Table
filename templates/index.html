@@ -8,105 +8,103 @@
 </head>
 <body class="bg-gray-100 h-screen flex items-center justify-center">
 
-  <div class="max-w-xl w-full bg-white p-8 rounded-2xl shadow-lg space-y-6">
-    <h1 class="text-3xl font-bold text-center text-blue-700">QR Game Portal</h1>
+<div class="max-w-xl w-full bg-white p-8 rounded-2xl shadow-lg space-y-6">
+  <h1 class="text-3xl font-bold text-center text-blue-700">QR Game Portal</h1>
 
-    <!-- Player Login -->
-    <div class="bg-blue-50 p-6 rounded-xl shadow space-y-3">
-      <h2 class="font-semibold text-xl text-gray-700">🎯 Player Login</h2>
-      <input id="player-name" class="w-full border p-3 rounded-lg" placeholder="Enter your name">
-
-      <!-- Ambassador Selection -->
-      <select id="player-ambassador" class="w-full border p-3 rounded-lg mt-2">
-        <option value="">Select Ambassador</option>
-        {% for key, admin in ADMINS.items() %}
-          <option value="{{ key }}">Team {{ key }} - {{ admin.name }}</option>
-        {% endfor %}
-      </select>
-
-      <button onclick="playerLogin()" class="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold mt-2">Login as Player</button>
-    </div>
-
-    <!-- Admin Login -->
-    <div class="bg-yellow-50 p-6 rounded-xl shadow space-y-3">
-      <h2 class="font-semibold text-xl text-gray-700">🛠️ Ambassador Login</h2>
-      <select id="admin-name" class="w-full border p-3 rounded-lg">
-        <option value="">Select Ambassador</option>
-        {% for key, admin in ADMINS.items() %}
-          <option value="{{ admin.name }}">Team {{ key }} - {{ admin.name }}</option>
-        {% endfor %}
-      </select>
-      <input id="admin-pass" type="password" class="w-full border p-3 rounded-lg" placeholder="Enter password">
-      <button onclick="adminLogin()" class="w-full bg-yellow-500 text-white py-2 rounded-lg font-semibold">Login as Admin</button>
-    </div>
+  <!-- Player Login -->
+  <div class="bg-blue-50 p-6 rounded-xl shadow space-y-3">
+    <h2 class="font-semibold text-xl text-gray-700">🎯 Player Login</h2>
+    <input id="player-name" class="w-full border p-3 rounded-lg" placeholder="Enter your name">
+    <select id="player-ambassador" class="w-full border p-3 rounded-lg mt-2">
+      <option value="">Select Ambassador</option>
+      {% for key, admin in ADMINS.items() %}
+        <option value="{{ key }}">Team {{ key }} - {{ admin.name }}</option>
+      {% endfor %}
+    </select>
+    <button onclick="playerLogin()" class="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold mt-2">Login as Player</button>
   </div>
 
-  <!-- Pass ADMINS data to JS -->
-  <script type="application/json" id="admins-data">
-    {{ ADMINS | tojson }}
-  </script>
+  <!-- Admin Login -->
+  <div class="bg-yellow-50 p-6 rounded-xl shadow space-y-3">
+    <h2 class="font-semibold text-xl text-gray-700">🛠️ Ambassador Login</h2>
+    <select id="admin-name" class="w-full border p-3 rounded-lg">
+      <option value="">Select Ambassador</option>
+      {% for key, admin in ADMINS.items() %}
+        <option value="{{ admin.name }}">Team {{ key }} - {{ admin.name }}</option>
+      {% endfor %}
+    </select>
+    <input id="admin-pass" type="password" class="w-full border p-3 rounded-lg" placeholder="Enter password">
+    <button onclick="adminLogin()" class="w-full bg-yellow-500 text-white py-2 rounded-lg font-semibold">Login as Admin</button>
+  </div>
+</div>
 
-  <script>
-    // Parse ADMINS data from HTML
-    const ADMINS_JS = JSON.parse(document.getElementById("admins-data").textContent);
+<script type="application/json" id="admins-data">
+  {{ ADMINS | tojson }}
+</script>
 
-    async function playerLogin(){
-      const name = document.getElementById("player-name").value.trim();
-      const team = document.getElementById("player-ambassador").value;
+<script>
+const ADMINS_JS = JSON.parse(document.getElementById("admins-data").textContent);
 
-      if(!name) return alert("Enter your name");
-      if(!team) return alert("Select an ambassador");
+async function playerLogin() {
+  const name = document.getElementById("player-name").value.trim();
+  const team = document.getElementById("player-ambassador").value;
 
-      const res = await fetch("/api/register", {
-        method: "POST",
-        headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({username:name, team:team})
-      });
+  if (!name) return alert("Enter your name");
+  if (!team) return alert("Select an ambassador");
 
-      const r = await res.json();
-      if(r.ok){
-        localStorage.setItem("username", name);
-        localStorage.setItem("team", team);
-        window.location.href = "/player";
-      } else {
-        if(r.error === "Username already exists"){
-          // allow login even if username exists
-          localStorage.setItem("username", name);
-          localStorage.setItem("team", team);
-          window.location.href = "/player";
-        } else {
-          alert(r.error);
-        }
-      }
+  try {
+    const res = await fetch("/api/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: name, team: team })
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      alert("Error: " + errorData.error);
+      return;
     }
 
-    async function adminLogin(){
-      const name = document.getElementById("admin-name").value;
-      const pass = document.getElementById("admin-pass").value;
-
-      if(!name || !pass) return alert("Fill all fields");
-
-      // Find the team number of selected admin
-      let team = null;
-      for(let key in ADMINS_JS){
-        if(ADMINS_JS[key].name === name) team = key;
-      }
-      if(!team) return alert("Invalid ambassador");
-
-      const res = await fetch("/api/admin/login", {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({name, team:team, password:pass})
-      });
-
-      const r = await res.json();
-      if(r.ok){
-        localStorage.setItem("admin", JSON.stringify({name, team}));
-        window.location.href = "/admin";
-      } else {
-        alert(r.error);
-      }
+    const data = await res.json();
+    if (data.ok) {
+      localStorage.setItem("username", name);
+      localStorage.setItem("team", team);
+      window.location.href = "/player";
+    } else {
+      alert("Unexpected error during login");
     }
-  </script>
+  } catch (err) {
+    console.error("Fetch error:", err);
+    alert("Error connecting to the server. Make sure Flask is running at http://127.0.0.1:5000/");
+  }
+}
+
+async function adminLogin(){
+  const name = document.getElementById("admin-name").value;
+  const pass = document.getElementById("admin-pass").value;
+
+  if(!name || !pass) return alert("Fill all fields");
+
+  let team = null;
+  for(let key in ADMINS_JS){
+    if(ADMINS_JS[key].name === name) team = key;
+  }
+  if(!team) return alert("Invalid ambassador");
+
+  const res = await fetch("/api/admin/login", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({name, team, password:pass})
+  });
+
+  const r = await res.json();
+  if(r.ok){
+    localStorage.setItem("admin", JSON.stringify({name, team}));
+    window.location.href = "/admin";
+  } else {
+    alert(r.error);
+  }
+}
+</script>
 </body>
 </html>
