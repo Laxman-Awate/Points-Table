@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <title>Player Dashboard</title>
   <link href="{{ url_for('static', filename='dist/output.css') }}" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gradient-to-br from-green-200 via-blue-200 to-purple-300 min-h-screen p-6">
 
@@ -14,13 +15,20 @@
     <h3 class="font-semibold text-lg mb-3">👤 Your Info</h3>
     <p id="player-name" class="text-lg font-medium"></p>
     <p id="player-team" class="text-lg font-medium"></p>
-    <p>Score: <span id="player-score" class="font-bold">0</span></p>
+    <p>Total Score: <span id="player-score" class="font-bold">0</span></p>
   </section>
 
   <!-- Start Scan -->
   <section class="bg-white p-6 rounded-xl shadow-md mb-6">
-    <button id="btn-scan" class="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">Start Scan</button>
-    <ul id="links-container" class="mt-4 space-y-2 hidden list-disc pl-6"></ul>
+    <button id="btn-scan" class="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+      Scan QR
+    </button>
+
+    <!-- Scan Links (appear after scan) -->
+    <div id="scan-links" class="mt-4 hidden">
+      <h4 class="font-semibold text-md mb-2">🎁 Scan Links</h4>
+      <ul id="links-container" class="space-y-2 list-disc pl-6"></ul>
+    </div>
   </section>
 
   <!-- Leaderboard -->
@@ -50,7 +58,6 @@
     const username = localStorage.getItem("username");
     const team = localStorage.getItem("team");
     const scoreEl = document.getElementById("player-score");
-    const linksContainer = document.getElementById("links-container");
 
     if(!username || !team){
       alert("Please login again!");
@@ -60,14 +67,16 @@
     document.getElementById("player-name").textContent = "Name: " + username;
     document.getElementById("player-team").textContent = "Team: " + team;
 
+    // Dummy links
     const dummyLinks = [
-      "https://www.google.com",
-      "https://www.youtube.com",
-      "https://www.wikipedia.org",
-      "https://www.openai.com",
-      "https://www.github.com"
+      { url: "https://www.google.com", points: 1 },
+      { url: "https://www.youtube.com", points: 1 },
+      { url: "https://www.wikipedia.org", points: 1 },
+      { url: "https://www.openai.com", points: 1 },
+      { url: "https://www.github.com", points: 1 }
     ];
 
+    // Load leaderboard
     async function loadLeaderboard() {
       try {
         const res = await fetch("/api/players");
@@ -75,42 +84,35 @@
         const tbody = document.getElementById("leaderboard-body");
         tbody.innerHTML = "";
 
-        // Ensure current player is present
-        let playerExists = data.players.some(p => p.username === username);
-        if (!playerExists) {
+        // Ensure player is present
+        if(!data.players.some(p=>p.username===username)){
           data.players.push({
-            username,
-            team,
-            qr_points: 0,
-            treasure_points: 0,
-            game1_points: 0,
-            game2_points: 0,
-            reel_points: 0,
-            score: 0
+            username, team,
+            qr_points:0, treasure_points:0, game1_points:0,
+            game2_points:0, reel_points:0, score:0
           });
         }
 
-        // Group players by team
+        // Group by team
         const teams = {};
-        data.players.forEach(p => {
-          if(!teams[p.team]) teams[p.team] = [];
+        data.players.forEach(p=>{
+          if(!teams[p.team]) teams[p.team]=[];
           teams[p.team].push(p);
         });
 
-        // Calculate team totals
-        const teamTotals = Object.keys(teams).map(teamId => {
-          const total = teams[teamId].reduce((sum, p) => sum + (p.score || 0), 0);
-          return { teamId, total, players: teams[teamId] };
+        // Calculate totals
+        const teamTotals = Object.keys(teams).map(teamId=>{
+          const total = teams[teamId].reduce((sum,p)=>sum+(p.score||0),0);
+          return {teamId, total, players: teams[teamId]};
         });
 
-        // Sort teams by total descending
-        teamTotals.sort((a,b) => b.total - a.total);
+        teamTotals.sort((a,b)=>b.total - a.total);
+        let rank=1;
 
-        let rank = 1;
-        teamTotals.forEach(teamData => {
-          // Team header row
+        teamTotals.forEach(teamData=>{
+          // Team row
           const teamRow = document.createElement("tr");
-          teamRow.classList.add("bg-gray-200", "font-semibold");
+          teamRow.classList.add("bg-gray-200","font-semibold");
           teamRow.innerHTML = `
             <td class="border p-2 text-center">${rank}</td>
             <td class="border p-2 text-center">${teamData.teamId} (Total)</td>
@@ -119,69 +121,83 @@
           `;
           tbody.appendChild(teamRow);
 
-          // Sort players by score
-          teamData.players.sort((a,b) => b.score - a.score);
-          teamData.players.forEach((p, idx) => {
+          // Players
+          teamData.players.sort((a,b)=>b.score - a.score);
+          teamData.players.forEach((p, idx)=>{
             const row = document.createElement("tr");
-            if(p.username === username){
+            if(p.username===username){
               row.classList.add("bg-yellow-100","font-semibold");
               scoreEl.textContent = p.score;
             } else {
-              row.classList.add(idx % 2 === 0 ? "bg-white" : "bg-gray-50");
+              row.classList.add(idx%2===0?"bg-white":"bg-gray-50");
             }
             row.classList.add("hover:bg-gray-100");
-
             row.innerHTML = `
               <td class="border p-2 text-center"></td>
               <td class="border p-2 text-center"></td>
               <td class="border p-2 text-center">${p.username}</td>
-              <td class="border p-2 text-center">${p.qr_points || 0}</td>
-              <td class="border p-2 text-center">${p.treasure_points || 0}</td>
-              <td class="border p-2 text-center">${p.game1_points || 0}</td>
-              <td class="border p-2 text-center">${p.game2_points || 0}</td>
-              <td class="border p-2 text-center">${p.reel_points || 0}</td>
+              <td class="border p-2 text-center">${p.qr_points||0}</td>
+              <td class="border p-2 text-center">${p.treasure_points||0}</td>
+              <td class="border p-2 text-center">${p.game1_points||0}</td>
+              <td class="border p-2 text-center">${p.game2_points||0}</td>
+              <td class="border p-2 text-center">${p.reel_points||0}</td>
               <td class="border p-2 text-center">${p.score}</td>
             `;
             tbody.appendChild(row);
           });
-
           rank++;
         });
 
-      } catch(err){
-        console.error("Failed to load leaderboard:", err);
-      }
+      } catch(err){ console.error(err); }
     }
 
-    // QR Scan links
-    document.getElementById("btn-scan").addEventListener("click", () => {
-      linksContainer.innerHTML = "";
-      dummyLinks.forEach(link => {
+    // Show scan links
+    function showScanLinks(){
+      const container = document.getElementById("links-container");
+      container.innerHTML = "";
+
+      dummyLinks.forEach(linkObj=>{
         const li = document.createElement("li");
         const a = document.createElement("a");
-        a.href = link;
-        a.textContent = link;
+        a.href = linkObj.url;
         a.target = "_blank";
-        a.className = "text-blue-600 underline hover:text-blue-800";
+        a.textContent = linkObj.url;
+        a.className = "text-blue-600 hover:underline";
 
+        // Add click event to award points
         a.addEventListener("click", async () => {
-          await fetch("/api/player/score", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username, points: 1, category: "qr_points" })
-          });
-          await loadLeaderboard();
+          try {
+            const res = await fetch("/api/player/score", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                username: username,
+                category: "qr_points",
+                points: linkObj.points
+              })
+            });
+            const data = await res.json();
+            if(data.ok){
+              alert(`You earned ${linkObj.points} point(s)! Total: ${data.score}`);
+              loadLeaderboard();
+            }
+          } catch(err){ console.error(err); }
         });
 
         li.appendChild(a);
-        linksContainer.appendChild(li);
+        container.appendChild(li);
       });
-      linksContainer.classList.remove("hidden");
-    });
 
-    // Initial load and auto refresh
+      document.getElementById("scan-links").classList.remove("hidden");
+    }
+
+    // Scan QR button now only shows links
+    document.getElementById("btn-scan").addEventListener("click", showScanLinks);
+
+    // Load leaderboard initially and refresh every 2 seconds
     loadLeaderboard();
-    setInterval(loadLeaderboard, 5000);
+    setInterval(loadLeaderboard, 2000);
+
   </script>
 </body>
 </html>

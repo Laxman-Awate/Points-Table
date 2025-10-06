@@ -3,6 +3,26 @@
         {
             "username": "Naveen",
             "team": "D",
+            "qr_points": 2,
+            "treasure_points": 1,
+            "game1_points": 0,
+            "game2_points": 0,
+            "reel_points": 50,
+            "score": 53
+        },
+        {
+            "username": "suhas",
+            "team": "D",
+            "qr_points": 0,
+            "treasure_points": 0,
+            "game1_points": 0,
+            "game2_points": 0,
+            "reel_points": 0,
+            "score": 0
+        },
+        {
+            "username": "nayeem",
+            "team": "C",
             "qr_points": 0,
             "treasure_points": 0,
             "game1_points": 0,

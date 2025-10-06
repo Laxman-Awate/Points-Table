@@ -37,12 +37,12 @@
 
   <!-- Points Update Section -->
   <section class="bg-white p-6 rounded-xl shadow-md mb-6">
-    <h3 class="font-semibold text-lg mb-3">🎯 Update Team Points</h3>
+    <h3 class="font-semibold text-lg mb-3">🎯 Update Player Points</h3>
     <div class="admin-controls flex flex-wrap gap-4">
-      <button data-category="treasure_points" class="update-btn px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700">Update Treasure Hunt Points</button>
-      <button data-category="game1_points" class="update-btn px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Update Game 1 Points</button>
-      <button data-category="game2_points" class="update-btn px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700">Update Game 2 Points</button>
-      <button data-category="reel_points" class="update-btn px-6 py-3 bg-pink-600 text-white rounded-lg hover:bg-pink-700">Update Reel Points</button>
+      <button data-category="treasure_points" class="update-btn px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700">Treasure Hunt</button>
+      <button data-category="game1_points" class="update-btn px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Game 1</button>
+      <button data-category="game2_points" class="update-btn px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700">Game 2</button>
+      <button data-category="reel_points" class="update-btn px-6 py-3 bg-pink-600 text-white rounded-lg hover:bg-pink-700">Reel</button>
     </div>
   </section>
 
@@ -57,7 +57,7 @@
     const playerSelect = document.getElementById("player-select");
     const resultSelect = document.getElementById("result-player-select");
 
-    // Load teams & players
+    // Load all players
     async function loadPlayers() {
       const res = await fetch("/api/players");
       const data = await res.json();
@@ -68,14 +68,15 @@
       playerSelect.innerHTML = "";
       resultSelect.innerHTML = "";
 
-      // Group players by team
+      // Group by team
       const teams = {};
       players.forEach(p => {
-        if(!teams[p.team]) teams[p.team] = [];
+        if (!teams[p.team]) teams[p.team] = [];
         teams[p.team].push(p);
       });
 
-      for(const team in teams) {
+      // Render teams
+      for (const team in teams) {
         const div = document.createElement("div");
         div.className = "bg-gray-50 p-4 rounded-lg shadow";
 
@@ -105,29 +106,28 @@
       }
     }
 
-    // Update team points
+    // Update player points
     document.querySelectorAll(".update-btn").forEach(btn => {
       btn.addEventListener("click", async () => {
         const category = btn.dataset.category;
-        const team = prompt("Enter Team to update points:");
+        const username = prompt("Enter player username to update points:");
         const points = parseInt(prompt("Enter points to add:"), 10);
-        if(!team || isNaN(points)) return;
+        if (!username || isNaN(points)) return alert("Invalid input");
 
-        await fetch("/api/team/update", {
+        await fetch("/api/player/score", {
           method: "POST",
           headers: {"Content-Type":"application/json"},
-          body: JSON.stringify({team, category, points})
+          body: JSON.stringify({username, category, points})
         });
-        loadPlayers();
+        loadPlayers(); // Refresh after update
       });
     });
 
     // Reset game
     document.getElementById("btn-reset").addEventListener("click", async () => {
-      if(confirm("Are you sure you want to reset all points?")){
-        await fetch("/api/reset", {method: "POST"});
-        loadPlayers();
-      }
+      if (!confirm("Are you sure you want to reset all points?")) return;
+      await fetch("/api/reset", {method:"POST"});
+      loadPlayers();
     });
 
     // Set Imposter
@@ -149,9 +149,10 @@
       alert(`${player} is declared the Runner-up!`);
     });
 
-    // Initial load
+    // Initial load + auto-refresh every 2s
     loadPlayers();
-    setInterval(loadPlayers, 5000); // refresh leaderboard every 5s
+    setInterval(loadPlayers, 2000);
+
   </script>
 </body>
 </html>
