@@ -3,12 +3,12 @@
         {
             "username": "Naveen",
             "team": "D",
-            "qr_points": 0,
-            "treasure_points": 0,
+            "qr_points": 1,
+            "treasure_points": 1,
             "game1_points": 0,
             "game2_points": 0,
             "reel_points": 0,
-            "score": 0
+            "score": 2
         },
         {
             "username": "suhas",
