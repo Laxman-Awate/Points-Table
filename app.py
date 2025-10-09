@@ -31,7 +31,7 @@ def load_data():
         return json.load(f)
 
 def save_data(data):
-    with open(DATA_FILE, "w") as f:
+    with open(DATA_FILE, "r") as f:
         json.dump(data, f, indent=4)
 
 def get_player(data, username):
