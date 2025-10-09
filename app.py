@@ -3,9 +3,7 @@ import json, os
 
 app = Flask(__name__)
 
-DATA_FILE = "data.json"
-
-# Admin / Ambassador setup
+# ----- Admin / Ambassador setup -----
 ADMINS = {
     "1": {"name": "Arsh", "password": "Arsh123"},
     "2": {"name": "Rishab", "password": "Rishab123"},
@@ -18,23 +16,14 @@ ADMINS = {
     "9": {"name": "Mahesh", "password": "Mahesh123"},
     "10": {"name": "Laxman", "password": "Laxman123"},
     "11": {"name": "Namrata", "password": "Namrata123"},
-    "12": {"name": "Arshan", "password": "Arshan123"},
-
+    "12": {"name": "Arshan", "password": "Arshan123"}
 }
 
+# ----- Temporary in-memory data -----
+data = {"players": []}
+
 # ---------------- Helper Functions ----------------
-def load_data():
-    if not os.path.exists(DATA_FILE):
-        with open(DATA_FILE, "w") as f:
-            json.dump({"players": []}, f)
-    with open(DATA_FILE, "r") as f:
-        return json.load(f)
-
-def save_data(data):
-    with open(DATA_FILE, "r") as f:
-        json.dump(data, f, indent=4)
-
-def get_player(data, username):
+def get_player(username):
     for player in data["players"]:
         if player["username"] == username:
             return player
@@ -54,8 +43,6 @@ def admin_page():
     return render_template("admin_dashboard.html")
 
 # ---------------- API Routes ----------------
-
-# Register / Login player
 @app.route("/api/register", methods=["POST"])
 def register_player():
     payload = request.get_json()
@@ -65,9 +52,7 @@ def register_player():
     if not username or not team:
         return jsonify({"error": "Missing fields"}), 400
 
-    data = load_data()
-    player = get_player(data, username)
-
+    player = get_player(username)
     if player:
         return jsonify({"ok": True, "existing": True})
 
@@ -82,10 +67,8 @@ def register_player():
         "score": 0
     }
     data["players"].append(new_player)
-    save_data(data)
     return jsonify({"ok": True, "existing": False})
 
-# Admin login
 @app.route("/api/admin/login", methods=["POST"])
 def admin_login():
     payload = request.get_json()
@@ -99,13 +82,10 @@ def admin_login():
     else:
         return jsonify({"error": "Invalid admin credentials"}), 401
 
-# Get all players
 @app.route("/api/players")
 def api_players():
-    data = load_data()
     return jsonify(data)
 
-# Update player score (Admin)
 @app.route("/api/player/score", methods=["POST"])
 def api_player_score():
     payload = request.get_json()
@@ -116,8 +96,7 @@ def api_player_score():
     if not username or not category:
         return jsonify({"error": "Missing fields"}), 400
 
-    data = load_data()
-    player = get_player(data, username)
+    player = get_player(username)
     if not player:
         return jsonify({"error": "Player not found"}), 404
 
@@ -126,7 +105,6 @@ def api_player_score():
     else:
         player[category] = points
 
-    # Update total score
     player["score"] = (
         player.get("qr_points", 0) +
         player.get("treasure_points", 0) +
@@ -135,10 +113,8 @@ def api_player_score():
         player.get("reel_points", 0)
     )
 
-    save_data(data)
     return jsonify({"ok": True, "score": player["score"]})
 
-# ---------------- QR Scan Route ----------------
 @app.route("/api/player/scan", methods=["POST"])
 def player_scan():
     payload = request.get_json()
@@ -147,17 +123,13 @@ def player_scan():
     if not username:
         return jsonify({"error": "Missing username"}), 400
 
-    data = load_data()
-    player = get_player(data, username)
-
+    player = get_player(username)
     if not player:
         return jsonify({"error": "Player not found"}), 404
 
-    # Give 1 point per QR scan
     points_to_add = 1
     player["qr_points"] += points_to_add
 
-    # Update total score
     player["score"] = (
         player.get("qr_points", 0) +
         player.get("treasure_points", 0) +
@@ -166,13 +138,10 @@ def player_scan():
         player.get("reel_points", 0)
     )
 
-    save_data(data)
     return jsonify({"ok": True, "reward": f"{points_to_add} QR point(s) added!", "score": player["score"]})
 
-# Leaderboard grouped by team
 @app.route("/api/leaderboard")
 def api_leaderboard():
-    data = load_data()
     teams = {}
     for p in data["players"]:
         if p["team"] not in teams:
@@ -188,10 +157,8 @@ def api_leaderboard():
     leaderboard = [{"team": k, **v} for k, v in teams.items()]
     return jsonify({"ok": True, "leaderboard": leaderboard})
 
-# Reset all players
 @app.route("/api/reset", methods=["POST"])
 def reset_all():
-    data = load_data()
     for p in data["players"]:
         p["qr_points"] = 0
         p["treasure_points"] = 0
@@ -199,9 +166,7 @@ def reset_all():
         p["game2_points"] = 0
         p["reel_points"] = 0
         p["score"] = 0
-    save_data(data)
     return jsonify({"ok": True})
 
-# ---------------- Run App ----------------
 if __name__ == "__main__":
     app.run(debug=True)
