@@ -15,11 +15,18 @@ document.getElementById("player-team").textContent = "Team: " + team;
 // ---------------- Dummy Links ----------------
 // Replace these with your own links later
 const dummyLinks = [
-    "https://yourlink1.com",
-    "https://yourlink2.com",
-    "https://yourlink3.com",
-    "https://yourlink4.com",
-    "https://yourlink5.com"
+    "https://maaz-code-hub.github.io/GSA-prompt-launcher/arsh",
+    "https://maaz-code-hub.github.io/GSA-prompt-launcher/rishab",
+    "https://maaz-code-hub.github.io/GSA-prompt-launcher/sama",
+    "https://maaz-code-hub.github.io/GSA-prompt-launcher/firdaus",
+    "https://maaz-code-hub.github.io/GSA-prompt-launcher/rashmi",
+    "https://maaz-code-hub.github.io/GSA-prompt-launcher/maaz",
+    "https://maaz-code-hub.github.io/GSA-prompt-launcher/naveli",
+    "https://maaz-code-hub.github.io/GSA-prompt-launcher/girish",
+    "https://maaz-code-hub.github.io/GSA-prompt-launcher/laxman",
+    "https://maaz-code-hub.github.io/GSA-prompt-launcher/mahesh",
+    "https://maaz-code-hub.github.io/GSA-prompt-launcher/namrata",
+    "https://maaz-code-hub.github.io/GSA-prompt-launcher/arshan",
 ];
 
 // ---------------- Load Leaderboard ----------------
